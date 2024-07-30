@@ -20,6 +20,9 @@ class Event_Explorer_Admin {
 			'admin/includes/class-event-explorer-taxonomy-location.php',
 			'admin/includes/class-event-explorer-metabox-details.php',
 			'admin/includes/class-event-explorer-metabox-date-and-time.php',
+			'admin/includes/class-event-explorer-remote-service.php',
+			'admin/includes/class-event-explorer-remote-post.php',
+			'admin/includes/class-event-explorer-remote-categories.php',
 			'admin/includes/class-event-explorer-wpbakery-sound-carousel-element.php',
 		];
 
@@ -33,6 +36,7 @@ class Event_Explorer_Admin {
 		new Events_Explorer_Taxonomy_Location($this->plugin_name, $this->version);
 		new Events_Explorer_Metabox_Details($this->plugin_name, $this->version);
 		new Events_Explorer_Metabox_Date_And_Time($this->plugin_name, $this->version);
+		new Event_Explorer_Remote_Post();
 		new Events_Explorer_WPBakery_Sound_Carousel_Element($this->plugin_name, $this->version);
 	}
 

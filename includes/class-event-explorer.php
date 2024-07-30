@@ -16,7 +16,7 @@ class Event_Explorer
     public function __construct()
     {
         $this->version = defined('EVENT_EXPLORER_VERSION') ? EVENT_EXPLORER_VERSION : '1.0.0';
-        $this->plugin_name = 'event-explorer-client';
+        $this->plugin_name = 'event-explorer-base';
 
         $this->load_dependencies();
         $this->set_locale();

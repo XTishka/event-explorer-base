@@ -6,7 +6,7 @@
  * @package           Event_Explorer
  *
  * @wordpress-plugin
- * Plugin Name:       Event Explorer Client
+ * Plugin Name:       Event Explorer Base
  * Plugin URI:        https://https://github.com/XTishka/wp-event-explorer-client
  * Description:       A plugin to provide an API for events and a shortcode to display them.
  * Version:           1.0.0
@@ -14,7 +14,7 @@
  * Author URI:        https://designrus.dk/
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
- * Text Domain:       event-explorer
+ * Text Domain:       event-explorer-base
  * Domain Path:       /languages
  */
 
