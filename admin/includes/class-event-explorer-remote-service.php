@@ -6,9 +6,11 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Event_Explorer_Remote_Service {
+class Event_Explorer_Remote_Service
+{
 
-    public static function get_token($api_url, $username, $password) {
+    public static function get_token($api_url, $username, $password)
+    {
         $response = wp_remote_post($api_url . '/wp-json/jwt-auth/v1/token', array(
             'body' => json_encode(array(
                 'username' => $username,
@@ -33,7 +35,7 @@ class Event_Explorer_Remote_Service {
         return null;
     }
 
-    public static function authorize($post) : array
+    public static function authorize($post): array
     {
         return array(
             'api_url' => 'http://events.xtf.com.ua',
@@ -49,12 +51,15 @@ class Event_Explorer_Remote_Service {
             return isset($meta[$key][0]) ? $meta[$key][0] : '';
         };
         $categories = new Event_Explorer_Remote_Categories();
+        $multimedia = new Event_Explorer_Remote_Multimedia($post);
 
-        return array(
-            'title' => $post->post_title,
-            'content' => $post->post_content,
-            'status' => 'publish',
-            'meta' => array(
+        return [
+            'title'             => $post->post_title,
+            'content'           => $post->post_content,
+            'status'            => $post->post_status,
+            'events-location'   => $categories->get_remote_category($post),
+            // 'featured_media'    => $multimedia->get_featured_image_id(),
+            'meta'              => [
                 'event_subtitle'            => $get_meta_value('event_subtitle'),
                 'next_preview_title'        => $get_meta_value('next_preview_title'),
                 'next_preview_description'  => $get_meta_value('next_preview_description'),
@@ -62,8 +67,9 @@ class Event_Explorer_Remote_Service {
                 'time_start'                => $get_meta_value('time_start'),
                 'date_end'                  => $get_meta_value('date_end'),
                 'time_end'                  => $get_meta_value('time_end'),
-            ),
-            'events-location' => $categories->get_remote_category($post),
-        );
+                'local_featured_image'      => $get_meta_value('local_featured_image'),
+                'remote_featured_image'     => $get_meta_value('remote_featured_image'),
+            ],
+        ];
     }
 }
