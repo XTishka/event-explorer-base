@@ -11,19 +11,14 @@ class Event_Explorer_Remote_Post
     public object $post;
     public string $endpoint;
     public array $headers;
+    public string $token;
+    public string $source;
 
-    public function __construct($post)
+    public function __construct($post, $token, $source)
     {
-        $auth = Event_Explorer_Remote_Service::authorize($post);
-        $token = Event_Explorer_Remote_Service::get_token($auth['api_url'], $auth['username'], $auth['password']);
-
-        if (!$token) {
-            error_log('Failed to get token');
-            return;
-        }
-
         $this->post = $post;
-        $this->endpoint = $auth['api_url'] . '/wp-json/wp/v2/events';
+        $this->source = $source;
+        $this->endpoint = $source . '/wp-json/wp/v2/events';
         $this->headers = [
             'Content-Type' => 'application/json',
             'Authorization' => 'Bearer ' . $token,
@@ -42,7 +37,11 @@ class Event_Explorer_Remote_Post
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        update_post_meta($this->post->ID, 'remote_post_id', $data['id']);
+        $serialized_data = get_post_meta($this->post->ID, 'remote_post_id', true);
+        $data_id = unserialize($serialized_data);
+        $data_id[$this->source] = $data['id'];
+
+        update_post_meta($this->post->ID, 'remote_post_id', serialize($data_id));
         update_post_meta($this->post->ID, 'remote_post_link', $data['link']);
 
         return $data;
@@ -50,8 +49,15 @@ class Event_Explorer_Remote_Post
 
     public function update_post()
     {
-        $remote_post_id = get_post_meta($this->post->ID, 'remote_post_id', true);
-        if (!$remote_post_id) return;
+        $serialized_data = get_post_meta($this->post->ID, 'remote_post_id', true);
+        $data = unserialize($serialized_data);
+
+        $remote_post_id = (isset($data[$this->source])) ? $data[$this->source] : false;
+
+        if ($remote_post_id === false) :
+            error_log('Failed to get remote post ID: ' . $this->source);
+            return;
+        endif;
 
         $response = wp_remote_post($this->endpoint . '/' . $remote_post_id, [
             'method' => 'PUT',

@@ -6,9 +6,11 @@ if (!defined('ABSPATH')) {
     exit; // Exit if accessed directly
 }
 
-class Event_Explorer_Remote_Service {
+class Event_Explorer_Remote_Service
+{
 
-    public static function get_token($api_url, $username, $password) {
+    public static function get_token($api_url, $username, $password)
+    {
         $response = wp_remote_post($api_url . '/wp-json/jwt-auth/v1/token', array(
             'body' => json_encode(array(
                 'username' => $username,
@@ -33,13 +35,28 @@ class Event_Explorer_Remote_Service {
         return null;
     }
 
-    public static function authorize($post) : array
+    public static function authorize($post): array
     {
-        return array(
-            'api_url' => 'http://events.xtf.com.ua',
-            'username' => 'developer@xtf.com.ua',
-            'password' => 'N#Q1vpWYOB77du55',
-        );
+        $terms = wp_get_post_terms($post->ID, 'events-location');
+        $locations_with_meta = array();
+
+        if (!is_wp_error($terms) && !empty($terms)) {
+            foreach ($terms as $term) {
+                $source = get_term_meta($term->term_id, 'source', true);
+                $username = get_term_meta($term->term_id, 'username', true);
+                $password = get_term_meta($term->term_id, 'password', true);
+
+                if (!empty($source) && !empty($username) && !empty($password)) :
+                    $locations_with_meta[$term->name] = array(
+                        'slug'     => $term->slug,
+                        'source'   => $source,
+                        'username' => $username,
+                        'password' => $password,
+                    );
+                endif;
+            }
+        }
+        return $locations_with_meta;
     }
 
     public static function get_post_data($post)
@@ -48,7 +65,7 @@ class Event_Explorer_Remote_Service {
         $get_meta_value = function ($key) use ($meta) {
             return isset($meta[$key][0]) ? $meta[$key][0] : '';
         };
-        $categories = new Event_Explorer_Remote_Categories();
+        // $categories = new Event_Explorer_Remote_Categories();
 
         return array(
             'title' => $post->post_title,
@@ -63,7 +80,7 @@ class Event_Explorer_Remote_Service {
                 'date_end'                  => $get_meta_value('date_end'),
                 'time_end'                  => $get_meta_value('time_end'),
             ),
-            'events-location' => $categories->get_remote_category($post),
+            // 'events-location' => $categories->get_remote_category($post),
         );
     }
 }
