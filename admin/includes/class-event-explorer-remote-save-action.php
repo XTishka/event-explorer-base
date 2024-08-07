@@ -61,7 +61,7 @@ class Event_Explorer_Remote_Save_Action
         $remote_values = array_values($remote);
         $difference    = array_diff($local_values, $remote_values);
 
-        if (!empty($difference)) :1
+        if (!empty($difference)) :
             $remoteCategories->create_location($difference);
             $this->synch_categories($post_id, $token, $source);
         endif;
