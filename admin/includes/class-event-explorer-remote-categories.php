@@ -8,61 +8,64 @@ if (!defined('ABSPATH')) {
 
 class Event_Explorer_Remote_Categories
 {
-    public function get_remote_locations($post)
+    public int      $post_id;
+    public string   $endpoint;
+    public array    $headers;
+    public string   $token;
+    public string   $source;
+
+    public function __construct(int $post_id, string $token, string $source)
+    {
+        $this->post_id = $post_id;
+        $this->source = $source;
+        $this->token = $token;
+        $this->endpoint = $source . '/wp-json/wp/v2/events-location';
+        $this->headers = [
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer ' . $token,
+        ];
+    }
+
+    public function get_locations()
     {
         $categoriesArray = [];
-        $auth = Event_Explorer_Remote_Service::authorize($post);
-        $token = Event_Explorer_Remote_Service::get_token($auth['api_url'], $auth['username'], $auth['password']);
 
-        if (!$token) {
-            return 'Failed to retrieve token';
-        }
+        $response = wp_remote_get($this->endpoint, [
+            'headers' => $this->headers,
+        ]);
 
-        $response = wp_remote_get($auth['api_url'] . '/wp-json/wp/v2/events-location', array(
-            'headers' => array(
-                'Authorization' => 'Bearer ' . $token,
-            ),
-        ));
-
-        if (is_wp_error($response)) {
-            return $response->get_error_message();
-        }
+        if (is_wp_error($response)) return $response->get_error_message();
 
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        if (!is_wp_error($data)) {
+        if (!is_array($data)) return 'Invalid response data.';
+
+        if (!empty($data)) {
             foreach ($data as $category) {
-                $categoriesArray[$category['id']] = $category['name'];
+                if (isset($category['id']) && isset($category['name'])) {
+                    $categoriesArray[$category['id']] = $category['name'];
+                }
             }
         }
 
         return $categoriesArray;
     }
 
-    public static function create_remote_location($post, array $locations)
+
+    public function create_location(array $locations)
     {
-        // Получение токена
-        $auth = Event_Explorer_Remote_Service::authorize($post);
-        $token = Event_Explorer_Remote_Service::get_token($auth['api_url'], $auth['username'], $auth['password']);
-
-        if (!$token) {
-            return 'Failed to retrieve token';
-        }
-
         foreach ($locations as $location) :
             error_log('Creating location: ' . $location);
-            $response = wp_remote_post($auth['api_url'] . '/wp-json/wp/v2/events-location', array(
+            $response = wp_remote_post($this->endpoint, array(
                 'body' => json_encode(array('name' => $location)),
                 'headers' => array(
                     'Content-Type' => 'application/json',
-                    'Authorization' => 'Bearer ' . $token,
+                    'Authorization' => 'Bearer ' . $this->token,
                 ),
             ));
 
-            if (is_wp_error($response)) {
-                return $response->get_error_message();
-            }
+            if (is_wp_error($response)) return $response->get_error_message();
         endforeach;
 
         $body = wp_remote_retrieve_body($response);

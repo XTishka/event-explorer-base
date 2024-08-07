@@ -8,15 +8,17 @@ if (!defined('ABSPATH')) {
 
 class Event_Explorer_Remote_Post
 {
-    public object $post;
-    public string $endpoint;
-    public array $headers;
-    public string $token;
-    public string $source;
+    public int      $post_id;
+    public array    $post_data;
+    public string   $endpoint;
+    public array    $headers;
+    public string   $token;
+    public string   $source;
 
-    public function __construct($post, $token, $source)
+    public function __construct($post_id, $post_data, $token, $source)
     {
-        $this->post = $post;
+        $this->post_id = $post_id;
+        $this->post_data = $post_data;
         $this->source = $source;
         $this->endpoint = $source . '/wp-json/wp/v2/events';
         $this->headers = [
@@ -28,7 +30,7 @@ class Event_Explorer_Remote_Post
     public function publish_post()
     {
         $response = wp_remote_post($this->endpoint, [
-            'body' => json_encode(Event_Explorer_Remote_Service::get_post_data($this->post)),
+            'body' => json_encode($this->post_data),
             'headers' => $this->headers,
         ]);
 
@@ -37,19 +39,19 @@ class Event_Explorer_Remote_Post
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        $serialized_data = get_post_meta($this->post->ID, 'remote_post_id', true);
+        $serialized_data = get_post_meta($this->post_id, 'remote_post_id', true);
         $data_id = unserialize($serialized_data);
         $data_id[$this->source] = $data['id'];
 
-        update_post_meta($this->post->ID, 'remote_post_id', serialize($data_id));
-        update_post_meta($this->post->ID, 'remote_post_link', $data['link']);
+        update_post_meta($this->post_id, 'remote_post_id', serialize($data_id));
+        update_post_meta($this->post_id, 'remote_post_link', $data['link']);
 
         return $data;
     }
 
     public function update_post()
     {
-        $serialized_data = get_post_meta($this->post->ID, 'remote_post_id', true);
+        $serialized_data = get_post_meta($this->post_id, 'remote_post_id', true);
         $data = unserialize($serialized_data);
 
         $remote_post_id = (isset($data[$this->source])) ? $data[$this->source] : false;
@@ -61,7 +63,7 @@ class Event_Explorer_Remote_Post
 
         $response = wp_remote_post($this->endpoint . '/' . $remote_post_id, [
             'method' => 'PUT',
-            'body' => json_encode(Event_Explorer_Remote_Service::get_post_data($this->post)),
+            'body' => json_encode($this->post_data),
             'headers' => $this->headers,
         ]);
 

@@ -25,8 +25,13 @@ class Event_Explorer_Remote_Save_Action
             $token = Event_Explorer_Remote_Service::get_token($location['source'], $location['username'], $location['password']);
 
             if ($token) :
-                $remote = new Event_Explorer_Remote_Post($post, $token, $location['source']);
+                $categoriesData  = $this->synch_categories($post->ID, $token, $location['source']);
+                $categoriesArray = $this->get_remote_categories($categoriesData);
+
+                $post_data      = Event_Explorer_Remote_Service::get_post_data($post, $categoriesArray);
+                $remote         = new Event_Explorer_Remote_Post($post->ID, $post_data, $token, $location['source']);
                 $remote_post_id = $this->get_remote_post_id($post, $location['source']);
+
                 if ($remote_post_id === false) :
                     $remote->publish_post();
                 else :
@@ -45,50 +50,39 @@ class Event_Explorer_Remote_Save_Action
         return (isset($data[$source])) ? $data[$source] : false;
     }
 
-    public function synch_categories($post_id, $post, $update): void
+    private function synch_categories(int $post_id, string $token, string $source): array
     {
-        $local = $this->get_local_locations($post);
-        $remote = $this->get_remote_locations($post);
+        $remoteCategories = new Event_Explorer_Remote_Categories($post_id, $token, $source);
 
-        $local_values = array_values($local);
+        $local  = Event_Explorer_Remote_Service::get_local_locations($post_id);
+        $remote = $remoteCategories->get_locations();
+
+        $local_values  = array_values($local);
         $remote_values = array_values($remote);
-        $difference = array_diff($local_values, $remote_values);
+        $difference    = array_diff($local_values, $remote_values);
 
-        if (!empty($difference)) :
-            error_log('create_remote_location');
-            $this->create_remote_location($post, $difference);
-            $this->get_remote_category($post);
+        if (!empty($difference)) :1
+            $remoteCategories->create_location($difference);
+            $this->synch_categories($post_id, $token, $source);
         endif;
+
+        return [
+            'local'         => $local,
+            'remote'        => $remote,
+            'local_values'  => $local_values,
+            'remote_values' => $remote_values,
+        ];
     }
 
-    public function get_remote_category($post): array
+    public function get_remote_categories($categories): array
     {
-        $matching_values = array_intersect($remote_values, $local_values);
-        $remote_ids = array();
-        foreach ($remote as $id => $value) {
-            if (in_array($value, $matching_values)) {
-                $remote_ids[] = $id;
-            }
-        }
+        $matching_values = array_intersect($categories['remote_values'], $categories['local_values']);
+        $remote_ids = [];
+
+        foreach ($categories['remote'] as $id => $value) :
+            if (in_array($value, $matching_values)) $remote_ids[] = $id;
+        endforeach;
 
         return $remote_ids;
-    }
-
-
-    public function get_local_locations($post): array
-    {
-        $categoriesArray = [];
-        $categories = wp_get_post_terms(
-            $post->ID,
-            'events-location',
-            array('fields' => 'all')
-        );
-        if (!is_wp_error($categories)) {
-            foreach ($categories as $category) {
-                $categoriesArray[$category->term_id] = $category->name;
-            }
-        }
-
-        return $categoriesArray;
     }
 }

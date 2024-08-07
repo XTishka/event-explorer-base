@@ -59,19 +59,19 @@ class Event_Explorer_Remote_Service
         return $locations_with_meta;
     }
 
-    public static function get_post_data($post)
+    public static function get_post_data(object $post, array $categories = []): array
     {
         $meta = get_post_meta($post->ID);
         $get_meta_value = function ($key) use ($meta) {
             return isset($meta[$key][0]) ? $meta[$key][0] : '';
         };
-        // $categories = new Event_Explorer_Remote_Categories();
 
-        return array(
-            'title' => $post->post_title,
-            'content' => $post->post_content,
-            'status' => 'publish',
-            'meta' => array(
+        return [
+            'title'           => $post->post_title,
+            'content'         => $post->post_content,
+            'status'          => 'publish',
+            'events-location' => $categories,
+            'meta'            => [
                 'event_subtitle'            => $get_meta_value('event_subtitle'),
                 'next_preview_title'        => $get_meta_value('next_preview_title'),
                 'next_preview_description'  => $get_meta_value('next_preview_description'),
@@ -79,8 +79,24 @@ class Event_Explorer_Remote_Service
                 'time_start'                => $get_meta_value('time_start'),
                 'date_end'                  => $get_meta_value('date_end'),
                 'time_end'                  => $get_meta_value('time_end'),
-            ),
-            // 'events-location' => $categories->get_remote_category($post),
+            ],
+        ];
+    }
+
+    public static function get_local_locations($post_id): array
+    {
+        $categoriesArray = [];
+        $categories = wp_get_post_terms(
+            $post_id,
+            'events-location',
+            array('fields' => 'all')
         );
+        if (!is_wp_error($categories)) {
+            foreach ($categories as $category) {
+                $categoriesArray[$category->term_id] = $category->name;
+            }
+        }
+
+        return $categoriesArray;
     }
 }
