@@ -29,13 +29,16 @@ class Event_Explorer_Remote_Save_Action
                 $categoriesArray = $this->get_remote_categories($categoriesData);
 
                 $post_data      = Event_Explorer_Remote_Service::get_post_data($post, $categoriesArray);
-                $remote         = new Event_Explorer_Remote_Post($post->ID, $post_data, $token, $location['source']);
+                $remote         = new Event_Explorer_Remote_Post($post->ID, $token, $location['source']);
                 $remote_post_id = $this->get_remote_post_id($post, $location['source']);
 
                 if ($remote_post_id === false) :
-                    $remote->publish_post();
+                    $post_data['featured_media'] = $this->upload_media($post->ID, $token, $location['source']);
+                    $remote->publish_post($post_data);
                 else :
-                    $remote->update_post();
+                    $post_data['featured_media'] = $this->update_media($remote, $post->ID, $remote_post_id, $token, $location['source']);
+                    $remote          = new Event_Explorer_Remote_Post($post->ID, $post_data, $token, $location['source']);
+                    $remote->update_post($post_data);
                 endif;
             else :
                 error_log('Failed to get token: ' . $location['source']);
@@ -74,7 +77,7 @@ class Event_Explorer_Remote_Save_Action
         ];
     }
 
-    public function get_remote_categories($categories): array
+    private function get_remote_categories($categories): array
     {
         $matching_values = array_intersect($categories['remote_values'], $categories['local_values']);
         $remote_ids = [];
@@ -84,5 +87,28 @@ class Event_Explorer_Remote_Save_Action
         endforeach;
 
         return $remote_ids;
+    }
+
+    private function upload_media($local_post_id, $token, $source)
+    {
+        $local_featured_image = get_post_thumbnail_id($local_post_id);
+        $featured_image_url = wp_get_attachment_image_src($local_featured_image, 'full');
+        $media = new Event_Explorer_Remote_Media($local_post_id, $token, $source);
+        $uploaded_featured_image_id = $media->upload($featured_image_url[0]);
+        return $uploaded_featured_image_id;
+    }
+
+    private function update_media(Event_Explorer_Remote_Post $remote, $local_post_id, $remote_post_id, $token, $source)
+    {
+        $remote_post = $remote->get_post($remote_post_id);
+        $local_featured_image = get_post_thumbnail_id($local_post_id);
+        $remote_local_featured_image = $remote_post['meta']['local_featured_image'];
+        $remote_featured_image = $remote_post['meta']['remote_featured_image'];
+
+        if ($local_featured_image !== $remote_local_featured_image) :
+            return $this->upload_media($local_post_id, $token, $source);
+        endif;
+
+        return $remote_featured_image;
     }
 }

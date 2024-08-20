@@ -59,7 +59,7 @@ class Event_Explorer_Remote_Service
         return $locations_with_meta;
     }
 
-    public static function get_post_data(object $post, array $categories = []): array
+    public static function get_post_data(object $post, array $categories = [], int $featured_media_id = 0): array
     {
         $meta = get_post_meta($post->ID);
         $get_meta_value = function ($key) use ($meta) {
@@ -71,6 +71,7 @@ class Event_Explorer_Remote_Service
             'content'         => $post->post_content,
             'status'          => 'publish',
             'events-location' => $categories,
+            'featured_media'  => $featured_media_id,
             'meta'            => [
                 'event_subtitle'            => $get_meta_value('event_subtitle'),
                 'next_preview_title'        => $get_meta_value('next_preview_title'),
@@ -79,6 +80,8 @@ class Event_Explorer_Remote_Service
                 'time_start'                => $get_meta_value('time_start'),
                 'date_end'                  => $get_meta_value('date_end'),
                 'time_end'                  => $get_meta_value('time_end'),
+                'local_featured_image'      => get_post_thumbnail_id($post->ID),
+                'remote_featured_image'     => $featured_media_id,
             ],
         ];
     }
