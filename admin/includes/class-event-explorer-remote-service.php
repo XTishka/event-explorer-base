@@ -69,7 +69,7 @@ class Event_Explorer_Remote_Service
         return [
             'title'           => $post->post_title,
             'content'         => $post->post_content,
-            'status'          => 'publish',
+            'status'          => $post->post_status,
             'events-location' => $categories,
             'meta'            => [
                 'event_subtitle'            => $get_meta_value('event_subtitle'),
