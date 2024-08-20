@@ -37,7 +37,7 @@ class Event_Explorer_Remote_Save_Action
                     $remote->publish_post($post_data);
                 else :
                     $post_data['featured_media'] = $this->update_media($remote, $post->ID, $remote_post_id, $token, $location['source']);
-                    $remote          = new Event_Explorer_Remote_Post($post->ID, $post_data, $token, $location['source']);
+                    $remote          = new Event_Explorer_Remote_Post($post->ID, $token, $location['source']);
                     $remote->update_post($post_data);
                 endif;
             else :
@@ -92,6 +92,8 @@ class Event_Explorer_Remote_Save_Action
     private function upload_media($local_post_id, $token, $source)
     {
         $local_featured_image = get_post_thumbnail_id($local_post_id);
+        if (!$local_featured_image) return 0;
+
         $featured_image_url = wp_get_attachment_image_src($local_featured_image, 'full');
         $media = new Event_Explorer_Remote_Media($local_post_id, $token, $source);
         $uploaded_featured_image_id = $media->upload($featured_image_url[0]);
@@ -102,8 +104,10 @@ class Event_Explorer_Remote_Save_Action
     {
         $remote_post = $remote->get_post($remote_post_id);
         $local_featured_image = get_post_thumbnail_id($local_post_id);
+        if (!$local_featured_image) return 0;
+
         $remote_local_featured_image = $remote_post['meta']['local_featured_image'];
-        $remote_featured_image = $remote_post['meta']['remote_featured_image'];
+        $remote_featured_image = $remote_post['featured_media'];
 
         if ($local_featured_image !== $remote_local_featured_image) :
             return $this->upload_media($local_post_id, $token, $source);

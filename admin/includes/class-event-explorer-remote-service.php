@@ -71,7 +71,6 @@ class Event_Explorer_Remote_Service
             'content'         => $post->post_content,
             'status'          => 'publish',
             'events-location' => $categories,
-            'featured_media'  => $featured_media_id,
             'meta'            => [
                 'event_subtitle'            => $get_meta_value('event_subtitle'),
                 'next_preview_title'        => $get_meta_value('next_preview_title'),
