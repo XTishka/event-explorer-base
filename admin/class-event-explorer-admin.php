@@ -27,7 +27,7 @@ class Event_Explorer_Admin
 			'admin/includes/class-event-explorer-remote-service.php',
 			'admin/includes/class-event-explorer-remote-post.php',
 			'admin/includes/class-event-explorer-remote-categories.php',
-			'admin/includes/class-event-explorer-remote-multimedia.php',
+			'admin/includes/class-event-explorer-remote-media.php',
 			'admin/includes/class-event-explorer-wpbakery-sound-carousel-element.php',
 		];
 

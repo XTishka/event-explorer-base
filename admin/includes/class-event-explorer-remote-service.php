@@ -37,29 +37,41 @@ class Event_Explorer_Remote_Service
 
     public static function authorize($post): array
     {
-        return array(
-            'api_url' => 'http://events.xtf.com.ua',
-            'username' => 'developer@xtf.com.ua',
-            'password' => 'N#Q1vpWYOB77du55',
-        );
+        $terms = wp_get_post_terms($post->ID, 'events-location');
+        $locations_with_meta = array();
+
+        if (!is_wp_error($terms) && !empty($terms)) {
+            foreach ($terms as $term) {
+                $source = get_term_meta($term->term_id, 'source', true);
+                $username = get_term_meta($term->term_id, 'username', true);
+                $password = get_term_meta($term->term_id, 'password', true);
+
+                if (!empty($source) && !empty($username) && !empty($password)) :
+                    $locations_with_meta[$term->name] = array(
+                        'slug'     => $term->slug,
+                        'source'   => $source,
+                        'username' => $username,
+                        'password' => $password,
+                    );
+                endif;
+            }
+        }
+        return $locations_with_meta;
     }
 
-    public static function get_post_data($post)
+    public static function get_post_data(object $post, array $categories = [], int $featured_media_id = 0): array
     {
         $meta = get_post_meta($post->ID);
         $get_meta_value = function ($key) use ($meta) {
             return isset($meta[$key][0]) ? $meta[$key][0] : '';
         };
-        $categories = new Event_Explorer_Remote_Categories();
-        $multimedia = new Event_Explorer_Remote_Multimedia($post);
 
         return [
-            'title'             => $post->post_title,
-            'content'           => $post->post_content,
-            'status'            => $post->post_status,
-            'events-location'   => $categories->get_remote_category($post),
-            // 'featured_media'    => $multimedia->get_featured_image_id(),
-            'meta'              => [
+            'title'           => $post->post_title,
+            'content'         => $post->post_content,
+            'status'          => $post->post_status,
+            'events-location' => $categories,
+            'meta'            => [
                 'event_subtitle'            => $get_meta_value('event_subtitle'),
                 'next_preview_title'        => $get_meta_value('next_preview_title'),
                 'next_preview_description'  => $get_meta_value('next_preview_description'),
@@ -67,9 +79,26 @@ class Event_Explorer_Remote_Service
                 'time_start'                => $get_meta_value('time_start'),
                 'date_end'                  => $get_meta_value('date_end'),
                 'time_end'                  => $get_meta_value('time_end'),
-                'local_featured_image'      => $get_meta_value('local_featured_image'),
-                'remote_featured_image'     => $get_meta_value('remote_featured_image'),
+                'local_featured_image'      => get_post_thumbnail_id($post->ID),
+                'remote_featured_image'     => $featured_media_id,
             ],
         ];
+    }
+
+    public static function get_local_locations($post_id): array
+    {
+        $categoriesArray = [];
+        $categories = wp_get_post_terms(
+            $post_id,
+            'events-location',
+            array('fields' => 'all')
+        );
+        if (!is_wp_error($categories)) {
+            foreach ($categories as $category) {
+                $categoriesArray[$category->term_id] = $category->name;
+            }
+        }
+
+        return $categoriesArray;
     }
 }
