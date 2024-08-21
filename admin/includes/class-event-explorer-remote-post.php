@@ -89,25 +89,15 @@ class Event_Explorer_Remote_Post
         return $data;
     }
 
-    public function trash_post()
+    public function trash_post($remote_post_id)
     {
-        $serialized_data = get_post_meta($this->post_id, 'remote_post_id', true);
-        $data = unserialize($serialized_data);
-
-        $remote_post_id = (isset($data[$this->source])) ? $data[$this->source] : false;
-
-        if ($remote_post_id === false) {
-            error_log('Failed to get remote post ID: ' . $this->source);
-            return false;
-        }
-
         $response = wp_remote_request($this->endpoint . '/' . $remote_post_id, [
             'method' => 'DELETE',
             'headers' => $this->headers,
         ]);
 
         if (is_wp_error($response)) {
-            // error_log('Failed to trash remote post: ' . $response->get_error_message());
+            error_log('Failed to trash remote post: ' . $response->get_error_message());
             return $response->get_error_message();
         }
 
@@ -119,24 +109,13 @@ class Event_Explorer_Remote_Post
             return true;
         }
 
-        // error_log('Failed to trash remote post: ' . print_r($data, true));
+        error_log('Failed to trash remote post: ' . print_r($data, true));
         return false;
     }
 
-    public function delete_post()
+    public function delete_post($remote_post_id)
     {
-        $serialized_data = get_post_meta($this->post_id, 'remote_post_id', true);
-        $data = unserialize($serialized_data);
-
-        $remote_post_id = (isset($data[$this->source])) ? $data[$this->source] : false;
-
-        if ($remote_post_id === false) {
-            error_log('Failed to get remote post ID for deletion: ' . $this->source);
-            return false;
-        }
-
         $url = $this->endpoint . '/' . $remote_post_id . '?force=true';
-        error_log('Sending DELETE request to: ' . $url);
 
         $response = wp_remote_request($url, [
             'method' => 'DELETE',
@@ -151,14 +130,11 @@ class Event_Explorer_Remote_Post
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
-        error_log('Response from DELETE request: ' . print_r($data, true));
-
         if (isset($data['deleted']) && $data['deleted'] === true) {
-            error_log('Remote post deleted successfully: ' . $remote_post_id);
             return true;
         }
 
-        error_log('Failed to delete remote post, response data: ' . print_r($data, true));
+        error_log('Failed to delete remote post ' . $remote_post_id . ', source: ' . $this->source);
         return false;
     }
 

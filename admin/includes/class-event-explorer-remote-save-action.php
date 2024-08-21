@@ -25,36 +25,36 @@ class Event_Explorer_Remote_Save_Action
 
         $locations = Event_Explorer_Remote_Service::authorize($post);
 
-        foreach ($locations as $location) {
+        foreach ($locations as $location) :
             $token = Event_Explorer_Remote_Service::get_token($location['source'], $location['username'], $location['password']);
 
-            if ($token) {
+            if ($token) :
                 $remote = new Event_Explorer_Remote_Post($post->ID, $token, $location['source']);
                 $remote_post_id = $this->get_remote_post_id($post, $location['source']);
 
-                if ($is_trashed) {
-                    if ($remote_post_id !== false) {
-                        $remote->trash_post();
-                    } else {
+                if ($is_trashed) :
+                    if ($remote_post_id !== false) :
+                        $remote->trash_post($remote_post_id);
+                    else :
                         error_log('Remote post not found for trashing: ' . $post->ID);
-                    }
-                } else {
+                    endif;
+                else :
                     $categoriesData = $this->synch_categories($post->ID, $token, $location['source']);
                     $categoriesArray = $this->get_remote_categories($categoriesData);
                     $post_data = Event_Explorer_Remote_Service::get_post_data($post, $categoriesArray);
 
-                    if ($remote_post_id === false) {
+                    if ($remote_post_id === false) :
                         $post_data['featured_media'] = $this->upload_media($post->ID, $token, $location['source']);
                         $remote->publish_post($post_data);
-                    } else {
+                    else :
                         $post_data['featured_media'] = $this->update_media($remote, $post->ID, $remote_post_id, $token, $location['source']);
                         $remote->update_post($post_data);
-                    }
-                }
-            } else {
+                    endif;
+                endif;
+            else :
                 error_log('Failed to get token: ' . $location['source']);
-            }
-        }
+            endif;
+        endforeach;
     }
 
 
@@ -63,8 +63,6 @@ class Event_Explorer_Remote_Save_Action
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
         if (wp_is_post_revision($post_id)) return;
         if ($post->post_type !== 'event') return;
-
-        error_log('Post deleted: ' . $post_id);
 
         $locations = Event_Explorer_Remote_Service::authorize($post);
         foreach ($locations as $location) :
@@ -75,7 +73,7 @@ class Event_Explorer_Remote_Save_Action
                 $remote_post_id = $this->get_remote_post_id($post, $location['source']);
 
                 if ($remote_post_id !== false) :
-                    $remote->delete_post();
+                    $remote->delete_post($remote_post_id);
                 else :
                     error_log('Remote post not found for deletion: ' . $remote->post_id);
                 endif;
